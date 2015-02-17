@@ -9,7 +9,7 @@
 using namespace std;
 using namespace boost;
 
-
+/*
 struct node {
   int lbl;
   bool val;
@@ -18,7 +18,7 @@ struct node {
     return (lbl == a.lbl);
   }
 
-  }; 
+  };  */
 
 //typedef int node;
 
@@ -114,8 +114,11 @@ void assign (int i, bool val)
 {
   cout << "in assign()!!!!";
   globalStruct.assignments[i] = val;
+  bool alreadyAssigned = globalStruct.assigned[i];
+  if(!alreadyAssigned){
   globalStruct.assigned[i] = true;
   globalStruct.decision[globalStruct.decisionLevel].push_back(i);
+  }
   //globalStruct.decisionLevel += 1; // Dont do this here, since implied vars stay on same decision level
 }
 
@@ -175,15 +178,17 @@ bool decide ()
 void updateGraph (vector<int> adjacentVars, int impliedVar){
   
   cout << "IN updateGraph()" << endl;
-  for(vector<int>::iterator it = adjacentVars.begin(); 
-      it != adjacentVars.end(); ++it){
+  if(adjacentVars.size() == 0) addRootNode(impliedVar);
+  else{
+    for(vector<int>::iterator it = adjacentVars.begin(); 
+	it != adjacentVars.end(); ++it){
     
-    int incomingVertex = (*it);
-    cout << incomingVertex << ", " << endl;
-    addEdge(incomingVertex, impliedVar);
+      int incomingVertex = (*it);
+      cout << incomingVertex << ", " << endl;
+      addEdge(incomingVertex, impliedVar);
 
-  }
-    
+    }
+  } 
 
   } 
 
@@ -223,11 +228,7 @@ lit locateUnitClause () {
       if (isAssigned) numLitsAssigned++ ;
       else continue;
 
-      if (truthValue) numLitsSatisfied++ ;
-
-
-      
-      
+      if (truthValue) numLitsSatisfied++ ; 
       
     } //inner for
 
@@ -259,9 +260,6 @@ lit locateUnitClause () {
 
   returnLit.lbl = -1;
   return returnLit;
-
- 
-  
 
 }
 
@@ -295,7 +293,7 @@ bool bcp () {
 
     bool result = bcp ();
 
-  } // end while
+    } // end while
 
 
 }

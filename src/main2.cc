@@ -96,14 +96,51 @@ int main(){
 
   lit lit0 = {0, true};
   lit lit0a = {0, false};
-  lit lit1 = {1, false};
+  lit lit1 = {1, true};
+  lit lit1a = {1, false};
   lit lit2 = {2, true};
 
-  cnfFormula testF = {{lit0}, {lit0a, lit1} };
+  cnfFormula trivial = {{lit0}};
+  cnfFormula testSat = {{lit0}, {lit0a, lit1}};
+
+  cnfFormula testUnsat1 = {{lit0},{lit0a}};
+
+  //cnfFormula testUnsat2 = {{lit0},{lit1}, {lit0a,lit1a}};
 
 
-  initializeStruct(testF);
+  initializeStruct(testSat);
+  //initializeStruct(testUnsat1);
+
+
+  // main dpll algorithm
   bool val = bcp ();
+  if(val){
+    cout << endl << endl << "Unsat!" << endl;
+    
+    printGlobal();
+    print_graph(globalStruct.g, "01234");
+
+    return 0;
+  }
+
+  while(true){
+    bool decideResult = decide();
+    if(!decideResult){
+      cout << endl << endl << "SAT!!!" << endl;
+      printGlobal();
+      print_graph(globalStruct.g, "01234");
+      return 0;
+    }
+    
+    bool bcpResult = bcp();
+    
+    /*while(bcpResult){
+      
+
+      } */
+
+  }
+  
 
   bool decVal = decide();
   
