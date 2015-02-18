@@ -27,7 +27,7 @@ enum family
 void initializeStruct (cnfFormula inFormula){
   
   int numVars = numUniqueVars(inFormula);
-  cout << numVars << endl;
+  cout << "Num Vars:  " << numVars << endl;
   globalStruct.inputFormula = inFormula;
   globalStruct.assignments = vector<bool>(numVars);
   globalStruct.assigned = vector<bool>(numVars, false);
@@ -54,12 +54,15 @@ void printGlobal (){
     int outerIndex = outerit - c.begin();
     vector<int> level = (*outerit);
 
-    cout << "Level " << outerIndex << ": ";
+    if(!level.empty()) {
+      cout << "Level " << outerIndex << ": ";
 
-    for(innerit = level.begin(); innerit != level.end(); ++innerit) { 
-      int innerIndex = innerit - level.begin();
+      for(innerit = level.begin(); innerit != level.end(); ++innerit) { 
+	int innerIndex = innerit - level.begin();
 
-      cout << (*innerit) << ", ";
+	cout << (*innerit) << ", ";
+
+      } // end if
     } // inner for
 
 
@@ -74,18 +77,20 @@ void printGlobal (){
   for(it = a.begin(); it != a.end(); ++it) { 
     int index = it - a.begin();
    
-    cout << index << ": " << (*it) << endl;
+    if(globalStruct.assigned[index]) 
+       cout << index << ": " << (*it) << endl;
 
   }
 
+  /*
   cout << "Assigned: " << endl;
 
   for(it = b.begin(); it != b.end(); ++it) { 
     int index = it - b.begin();
    
-    cout << index << ": " << (*it) << endl;
+    cout << index << ": " << (*it) << endl; 
 
-  }
+    } */
 
 }
   
@@ -95,27 +100,38 @@ int main(){
 
 
   lit lit0 = {0, true};
-  lit lit0a = {0, false};
+  lit nlit0 = {0, false};
   lit lit1 = {1, true};
-  lit lit1a = {1, false};
+  lit nlit1 = {1, false};
   lit lit2 = {2, true};
+  lit nlit2 = {2, false};
+
+  lit lit3 = {3, true};
+  lit nlit3 = {3, false};
 
   cnfFormula trivial = {{lit0}};
-  cnfFormula testSat = {{lit0}, {lit0a, lit1}};
+  cnfFormula testSat = {{lit0}, {nlit0, lit1}};
 
-  cnfFormula testUnsat1 = {{lit0},{lit0a}};
+  cnfFormula testUnsat1 = {{lit0},{nlit0}};
 
-  //cnfFormula testUnsat2 = {{lit0},{lit1}, {lit0a,lit1a}};
+  cnfFormula testUnsat2 = {{lit0}, {lit1}, {nlit0,nlit1}};
 
+  cnfFormula testUnsat3 = {{lit0}, {lit1}, {lit2}, {nlit0,nlit1,nlit2}};
+  
+  cnfFormula testUnsat4 = {{lit0}, {lit1}, {lit2}, {lit3}, 
+			   {nlit0,nlit1,nlit2, nlit3}};
 
-  initializeStruct(testSat);
-  //initializeStruct(testUnsat1);
+  
+  cnfFormula testUnsatW = { {lit0, nlit0}, {lit1, nlit1} };
+  //initializeStruct(testSat);
+  initializeStruct(testUnsat2);
+  //cout << "AAAAAA";
 
 
   // main dpll algorithm
   bool val = bcp ();
   if(val){
-    cout << endl << endl << "Unsat!" << endl;
+    cout << endl << endl << "Unsat!" << endl << endl;
     
     printGlobal();
     print_graph(globalStruct.g, "01234");
@@ -126,7 +142,7 @@ int main(){
   while(true){
     bool decideResult = decide();
     if(!decideResult){
-      cout << endl << endl << "SAT!!!" << endl;
+      cout << endl << endl << "SAT!!!" << endl << endl;
       printGlobal();
       print_graph(globalStruct.g, "01234");
       return 0;
@@ -134,14 +150,24 @@ int main(){
     
     bool bcpResult = bcp();
     
-    /*while(bcpResult){
+    while(bcpResult){
+      int backTrackLevel = analyzeConflict();
+      if(backTrackLevel < 0){
+	cout << endl << endl << "Unsat!" << endl << endl;
+	printGlobal();
+	print_graph(globalStruct.g, "01234");
+
+	return 0;
+      }
+      
+      
       
 
-      } */
+      } 
 
   }
   
-
+  /*
   bool decVal = decide();
   
   cout << endl << "BCP result: " << val << endl;
@@ -149,7 +175,7 @@ int main(){
 
   printGlobal();
 
-  print_graph(globalStruct.g, "01234");
+  print_graph(globalStruct.g, "01234"); */
   
   
   

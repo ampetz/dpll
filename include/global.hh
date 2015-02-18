@@ -71,6 +71,8 @@ struct globalState {
 
   int decisionLevel;
 
+  int conflictClauseIndex;
+
 }; //globalStruct;
 
 
@@ -78,6 +80,11 @@ struct globalState {
 
 globalState globalStruct;
 
+bool isAssigned(int var){
+  return globalStruct.assigned[var];
+
+
+}
 
 int numUniqueVars (cnfFormula inFormula){
 
@@ -112,11 +119,11 @@ int numUniqueVars (cnfFormula inFormula){
   //TODO:  add tree updates here??
 void assign (int i, bool val)
 {
-  cout << "in assign()!!!!";
+  //cout << "in assign()!!!!";
   globalStruct.assignments[i] = val;
-  bool alreadyAssigned = globalStruct.assigned[i];
+  bool alreadyAssigned = isAssigned(i);
   if(!alreadyAssigned){
-  globalStruct.assigned[i] = true;
+    globalStruct.assigned[i] = true;
   globalStruct.decision[globalStruct.decisionLevel].push_back(i);
   }
   //globalStruct.decisionLevel += 1; // Dont do this here, since implied vars stay on same decision level
@@ -162,11 +169,11 @@ bool decide ()
       if ( (*it) == false ) {
 	//TODO:  Heuristic for choosing index and truth value here...
 	int index = it - v.begin();
-	cout << endl << index << endl;
+	//cout << endl << index << endl;
 	bool truthValue = true;
-	cout << "past past";
+	//cout << "past past";
 	assign(index, truthValue);
-	cout << "Made it here!";
+	//cout << "Made it here!";
 	addRootNode(index);
 	return true; // Successful assignment
       }
@@ -177,14 +184,14 @@ bool decide ()
 
 void updateGraph (vector<int> adjacentVars, int impliedVar){
   
-  cout << "IN updateGraph()" << endl;
+  //cout << "IN updateGraph()" << endl;
   if(adjacentVars.size() == 0) addRootNode(impliedVar);
   else{
     for(vector<int>::iterator it = adjacentVars.begin(); 
 	it != adjacentVars.end(); ++it){
     
       int incomingVertex = (*it);
-      cout << incomingVertex << ", " << endl;
+      //cout << incomingVertex << ", " << endl;
       addEdge(incomingVertex, impliedVar);
 
     }
@@ -194,11 +201,11 @@ void updateGraph (vector<int> adjacentVars, int impliedVar){
 
 //returns -1 if none found.  -2 on conflict.
 //  Otherwise, variable that is implied by unit clause
-lit locateUnitClause () {
-
+pair<int,int> locateUnitClause () {
+  cout << "IN LOCATE LOOP" << endl << endl;
 
   cnfFormula v = globalStruct.inputFormula; 
-  cnfFormula::reverse_iterator outerIt;
+  cnfFormula::iterator outerIt; // reverse??
   clause::iterator innerIt;
 
   int numLitsSatisfied;
@@ -207,25 +214,28 @@ lit locateUnitClause () {
 
   lit returnLit;
   lit daLit;
+  int outerIndex, innerIndex;
 
-  for (outerIt = v.rbegin(); outerIt != v.rend(); ++outerIt) {
+  for (outerIt = v.begin(); outerIt != v.end(); ++outerIt) {
     clause c = (*outerIt);
 
-    // int outerIndex = (outerIt - v.begin());
+    outerIndex = (outerIt - v.begin());
     
     numLitsSatisfied = 0;
     numLitsAssigned = 0;
     clauseSize = c.size();
-    cout << "Clause size: " << clauseSize << endl;
+    cout << endl << "Clause size: " << clauseSize << endl;
     
 
     for(innerIt = c.begin(); innerIt != c.end(); ++innerIt) {  
       daLit = (*innerIt);
+      innerIndex = (innerIt - c.begin());
       int var = daLit.lbl;
-      bool isAssigned = globalStruct.assigned[daLit.lbl];
+      bool isItAssigned = isAssigned(daLit.lbl);
       bool truthValue = getLitTruthValue (daLit);
-
-      if (isAssigned) numLitsAssigned++ ;
+      
+      
+      if (isItAssigned) numLitsAssigned++ ;
       else continue;
 
       if (truthValue) numLitsSatisfied++ ; 
@@ -234,94 +244,124 @@ lit locateUnitClause () {
 
    
     if(numLitsAssigned == clauseSize && numLitsSatisfied == 0){
-      returnLit.lbl = -2;
-      return returnLit;
+      //returnLit.lbl = -2;
+      cout << "Conflict Clause: " << endl;
+      for(innerIt = c.begin(); innerIt != c.end(); ++innerIt) {  
+	daLit = (*innerIt);
+	if(!daLit.sign) cout << "not-" ;
+	cout << daLit.lbl << ",";
+      }
+      cout << endl;
+      return make_pair(-2, outerIndex);
     }
     if(numLitsAssigned == (clauseSize - 1) && numLitsSatisfied == 0){
-      /*
-      if(std::find(c.begin(), c.end(), var) != c.end()) 
-      litsInUnitClause.push_back(daLit.lbl); */
-      
+
       vector<int> uv;
       clause::iterator it;
 
-      for(it = c.begin(); it != c.end(); ++it)
+      lit unitLit;
+      lit temp;
+      for(it = c.begin(); it != c.end(); ++it){
+	temp = (*it);
+	if(!isAssigned(temp.lbl)){
+	  unitLit = temp;
+	  break;
+	}
+      }
+
+      for(it = c.begin(); it != c.end(); ++it)	
 	if(std::find(uv.begin(), uv.end(), (*it).lbl) == uv.end()) 
-	  if((*it).lbl != daLit.lbl) uv.push_back((*it).lbl);
+	  if((*it).lbl != unitLit.lbl) uv.push_back((*it).lbl);
 
-      cout << "SIZE: " << uv.size();
-      updateGraph(uv, daLit.lbl);
+      //cout << "SIZE: " << uv.size();
+      updateGraph(uv, unitLit.lbl);
 
-      return daLit;
+      //globalStruct.inputFormula.erase(outerIt);
+      return make_pair(outerIndex, innerIndex);
 
     }
 
   } // outer for
 
-  returnLit.lbl = -1;
-  return returnLit;
+  //returnLit.lbl = -1;
+  return make_pair(-1,-1);
 
 }
 
 
 // Returns true on conflict, else false
 bool bcp () {
-
+  cout << "IN BCP LOOP" << endl;
   int result = 0;
 
   while(result != -1 && result != -2){
     
-    lit unitLit = locateUnitClause();
+    //lit unitLit = locateUnitClause();
+    pair<int, int> p = locateUnitClause();
+    lit unitLit = globalStruct.inputFormula[p.first][p.second];
     
-    if(unitLit.lbl == -1){ // no more unit clauses(no more implications)
+    if(p.first == -1){ // no more unit clauses(no more implications)
       globalStruct.decisionLevel += 1;
       return false;
 
     }
 
-    if(unitLit.lbl == -2) // conflict
+    if(p.first == -2) {// conflict     
+      globalStruct.conflictClauseIndex = p.second;
       return true;
 
-    cout << "UNIT CLAUSE REACHED";
-    int var = unitLit.lbl;
-    bool sign = unitLit.sign;
-    bool assignment;
-    if(sign) assignment = true;
-    else assignment = false;
+    }
 
-    assign(var, assignment);
+    cout << "UNIT CLAUSE REACHED" << endl;
+    cout << "Implied Var:  " << unitLit.lbl << "," << unitLit.sign << endl;
+    
+    
+    if(isAssigned(unitLit.lbl) && 
+       !(globalStruct.assignments[unitLit.lbl] == unitLit.sign))
+      return true;
+
+
+    if(!isAssigned(unitLit.lbl)){
+      int var = unitLit.lbl;
+      bool sign = unitLit.sign;
+      bool assignment;
+      if(sign) assignment = true;
+      else assignment = false;
+
+      assign(var, assignment);
+      }
+    
+    //globalStruct.inputFormula.erase(globalStruct.inputFormula.begin() + p.first);
 
     bool result = bcp ();
 
     } // end while
 
 
+} // end bcp()
+
+int findUIP (){
+
+
 }
 
-/*
-void updateFormula (int i){
+int analyzeConflict (){
 
 
-  cnfFormula v = globalStruct.inputFormula; 
-  cnfFormula::iterator outerIt;
-  clause::iterator innerIt;
-  for (outerIt = v.begin(); outerIt != v.end(); ++outerIt) {
-    clause c = (*outerIt);
-    int outerIndex = (outerIt - v.begin());
+  return 0;
+}
 
-    for(innerIt = c.begin(); innerIt != c.end(); ++innerIt) {  
-      lit daLit = (*innerIt);
-      if(daLit.lbl != i) continue;
-      int innerIndex = (innerIt - c.begin());
-      bool truthValue = getLitTruthValue(daLit);
+void backTrack (int level) {
 
-      globalStruct.formula[outerIndex][innerIndex] = truthValue;
-     } 
+  //TODO:  forEach decision level d > level, 
+           //forEach vertex v at decision level d, clear_vertex(v, g)
 
-    }
-    } */
+  // TODO:  Collect vector vec of variables decided at decision levels < level. 
+  //        Zero out assigned[], then repopulate assigned[] and assignments[] with ONLY variables in vec.  
 
+  // TODO:  decisionLevel = level
 
+}
 
 
 #endif // GLOBAL_HH
