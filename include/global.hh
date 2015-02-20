@@ -94,11 +94,111 @@ struct globalState {
 
 globalState globalStruct;
 
+
+void printGlobal (){
+
+  vector<bool>::iterator it;
+  vector< vector<int> >::iterator outerit;
+  vector<int>::iterator innerit;
+  vector<bool> a = globalStruct.assignments;
+  vector<bool> b = globalStruct.assigned;
+  vector<vector<int>> c = globalStruct.decision;
+  
+
+  
+  cout << "Decisions: " << endl;
+  //if (c.empty()) cout << "None" << endl;
+  //else{
+
+  for(outerit = c.begin(); outerit != c.end(); ++outerit) { 
+    int outerIndex = outerit - c.begin();
+    vector<int> level = (*outerit);
+
+    if(!level.empty()) {
+      cout << "Level " << outerIndex << ": ";
+
+      for(innerit = level.begin(); innerit != level.end(); ++innerit) { 
+	int innerIndex = innerit - level.begin();
+
+	cout << (*innerit) << ", ";
+
+      } // end if
+    } // inner for
+
+
+
+    if(!level.empty()) cout << endl;
+
+
+  } // outer for
+
+  //} // end else
+
+  cout << "Assignments: " << endl;
+
+  for(it = a.begin(); it != a.end(); ++it) { 
+    int index = it - a.begin();
+   
+    if(globalStruct.assigned[index]) 
+       cout << index << ": " << (*it) << endl;
+
+  }
+
+  print_graph(globalStruct.g, "01234");
+
+  /*
+  cout << "Assigned: " << endl;
+
+  for(it = b.begin(); it != b.end(); ++it) { 
+    int index = it - b.begin();
+   
+    cout << index << ": " << (*it) << endl; 
+
+    } */
+
+} // end printGlobal()
+
+
 bool isAssigned(int var){
   return globalStruct.assigned[var];
 
 
 }
+
+
+
+int maxLabel (cnfFormula inFormula){
+
+  cnfFormula v = inFormula; //globalStruct.inputFormula
+  cnfFormula::iterator outerIt;
+  clause::iterator innerIt;
+  
+  vector<int> uniqueVars;
+  int count = 0;
+
+
+  for (outerIt = v.begin(); outerIt != v.end(); ++outerIt) {
+    clause c = (*outerIt);
+    //int outerIndex = (outerIt - v.begin());
+    
+    for(innerIt = c.begin(); innerIt != c.end(); ++innerIt) {
+
+      lit l = (*innerIt);
+      int var = l.lbl;
+      bool exists = std::find(uniqueVars.begin(), uniqueVars.end(), var) != uniqueVars.end();
+      //count++;
+
+      if(!exists) uniqueVars.push_back(var);
+    } // inner for
+
+  } // outer for
+
+  int max = (*max_element(uniqueVars.begin(), uniqueVars.end()));
+  cout << "MAX: " << max << endl;
+
+  return max;
+} // end uniqueVars
+
 
 int numUniqueVars (cnfFormula inFormula){
 
@@ -188,8 +288,10 @@ bool decide ()
 	bool truthValue = true;
 	//cout << "past past";
 	assign(index, truthValue);
+	cout << "Deciding on: " << index << endl;
 	//cout << "Made it here!";
 	addRootNode(index);
+	globalStruct.decisionLevel += 1; 
 	return true; // Successful assignment
       }
     }
@@ -239,7 +341,7 @@ pair<int,int> locateUnitClause () {
     numLitsSatisfied = 0;
     numLitsAssigned = 0;
     clauseSize = c.size();
-    cout << endl << "Clause size: " << clauseSize << endl;
+
     
 
     for(innerIt = c.begin(); innerIt != c.end(); ++innerIt) {  
@@ -251,7 +353,7 @@ pair<int,int> locateUnitClause () {
       
       
       if (isItAssigned) numLitsAssigned++ ;
-      else continue;
+      else {cout << "Not assigned: " << var << endl; continue; }
 
       if (truthValue) numLitsSatisfied++ ; 
       
@@ -270,7 +372,7 @@ pair<int,int> locateUnitClause () {
       return make_pair(-2, outerIndex);
     }
     if(numLitsAssigned == (clauseSize - 1) && numLitsSatisfied == 0){
-
+      /*
       vector<int> uv;
       clause::iterator it;
 
@@ -280,6 +382,7 @@ pair<int,int> locateUnitClause () {
 	temp = (*it);
 	if(!isAssigned(temp.lbl)){
 	  unitLit = temp;
+	  cout << "IN HERE NOWWW: " << unitLit.lbl << endl;
 	  break;
 	}
       }
@@ -289,12 +392,15 @@ pair<int,int> locateUnitClause () {
 	  if((*it).lbl != unitLit.lbl) uv.push_back((*it).lbl);
 
       //cout << "SIZE: " << uv.size();
-      updateGraph(uv, unitLit.lbl);
+      updateGraph(uv, unitLit.lbl); */
 
       //globalStruct.inputFormula.erase(outerIt);
+      cout << endl << "Clause size: " << clauseSize << endl;
       return make_pair(outerIndex, innerIndex);
 
     }
+
+
 
   } // outer for
 
@@ -313,10 +419,10 @@ bool bcp () {
     
     //lit unitLit = locateUnitClause();
     pair<int, int> p = locateUnitClause();
-    lit unitLit = globalStruct.inputFormula[p.first][p.second];
     
     if(p.first == -1){ // no more unit clauses(no more implications)
-      globalStruct.decisionLevel += 1;
+      //globalStruct.decisionLevel += 1;  // move to decide()??
+      cout << "Returning from bcp" << endl;
       return false;
 
     }
@@ -327,25 +433,60 @@ bool bcp () {
 
     }
 
+
+    vector<int> uv;
+    clause::iterator it;
+
+    clause c = globalStruct.inputFormula[p.first];
+    lit unitLit;
+    lit temp;
+    for(it = c.begin(); it != c.end(); ++it){
+      temp = (*it);
+      if(!isAssigned(temp.lbl)){
+	unitLit = temp;
+	cout << "IN HERE NOWWW: " << unitLit.lbl << endl;
+	break;
+      }
+    }
+
+    for(it = c.begin(); it != c.end(); ++it)	
+      if(std::find(uv.begin(), uv.end(), (*it).lbl) == uv.end()) 
+	if((*it).lbl != unitLit.lbl) uv.push_back((*it).lbl);
+
+    //cout << "SIZE: " << uv.size();
+    updateGraph(uv, unitLit.lbl);
+    //lit unitLit = globalStruct.inputFormula[p.first][p.second];
+
     cout << "UNIT CLAUSE REACHED" << endl;
     cout << "Implied Var:  " << unitLit.lbl << "," << unitLit.sign << endl;
+    printGlobal();
+    cout << "After unit clause and globalprint()" << endl;
     
+
     
     if(isAssigned(unitLit.lbl) && 
-       !(globalStruct.assignments[unitLit.lbl] == unitLit.sign))
-      return true;
+       !(globalStruct.assignments[unitLit.lbl] == unitLit.sign)){
+      cout << "Reached this" << endl;
+      return false; }
 
 
     if(!isAssigned(unitLit.lbl)){
       int var = unitLit.lbl;
+      cout << "Unit label: " << var << endl;
       bool sign = unitLit.sign;
       bool assignment;
       if(sign) assignment = true;
       else assignment = false;
 
       assign(var, assignment);
+      cout << "Assigning " << var << " in bcp()" << endl;
+      //updateGraph(uv, unitLit.lbl);
+
+      cout << "After Assigned Unit Lit: " << endl;
+      printGlobal();
       }
     
+
     //globalStruct.inputFormula.erase(globalStruct.inputFormula.begin() + p.first);
 
     bool result = bcp ();
@@ -727,11 +868,13 @@ int analyzeConflict (){
   return 0;
 }
 
-void backTrack (int level) {
+bool backTrack (int level) {
 
   //TODO:  forEach decision level d > level, 
            //forEach vertex v at decision level d, clear_vertex(v, g)
 
+
+  cout << "WE'RE BACKTRACKING!!!!!!!!!!" << endl;
   vector<int> vars;
 
   for(vector<vector<int> >::iterator it = globalStruct.decision.begin(); it != (globalStruct.decision.begin() + level + 1); ++it){
@@ -769,7 +912,8 @@ void backTrack (int level) {
 
 	globalStruct.decisionLevel = level;
 
-	return;
+	bool bcpResult = bcp();
+	return bcpResult;
 
 
 
