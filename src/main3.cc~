@@ -1,0 +1,139 @@
+//=======================================================================
+// Copyright 2001 Jeremy G. Siek, Andrew Lumsdaine, Lie-Quan Lee, 
+//
+// Distributed under the Boost Software License, Version 1.0. (See
+// accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt)
+//=======================================================================
+#include <boost/config.hpp>
+#include <iostream>
+#include <vector>
+#include <string>
+#include <boost/graph/adjacency_list.hpp>
+#include <boost/tuple/tuple.hpp>
+#include <boost/graph/graph_utility.hpp>
+#include <stdlib.h>
+#include <cstdlib>
+
+#include "global.hh"
+
+using namespace std;
+using namespace boost;
+enum family
+{ Jeanie, Debbie, Rick, John, Amanda, Margaret, Benjamin, N };
+
+
+
+void initializeStruct (cnfFormula inFormula){
+  
+  int numVars = numUniqueVars(inFormula);
+  cout << "Num Vars:  " << numVars << endl;
+  globalStruct.inputFormula = inFormula;
+  globalStruct.assignments = vector<bool>(numVars);
+  globalStruct.assigned = vector<bool>(numVars, false);
+  globalStruct.decision = vector<vector<int>>(numVars);
+  globalStruct.decisionLevel = 0;
+  globalStruct.g = graphType(numVars + 1);
+
+}
+
+void printGlobal (){
+
+  vector<bool>::iterator it;
+  vector< vector<int> >::iterator outerit;
+  vector<int>::iterator innerit;
+  vector<bool> a = globalStruct.assignments;
+  vector<bool> b = globalStruct.assigned;
+  vector<vector<int>> c = globalStruct.decision;
+  
+
+  
+  cout << "Decisions: " << endl;
+
+  for(outerit = c.begin(); outerit != c.end(); ++outerit) { 
+    int outerIndex = outerit - c.begin();
+    vector<int> level = (*outerit);
+
+    if(!level.empty()) {
+      cout << "Level " << outerIndex << ": ";
+
+      for(innerit = level.begin(); innerit != level.end(); ++innerit) { 
+	int innerIndex = innerit - level.begin();
+
+	cout << (*innerit) << ", ";
+
+      } // end if
+    } // inner for
+
+
+
+    cout << endl;
+
+
+  } // outer for
+
+  cout << "Assignments: " << endl;
+
+  for(it = a.begin(); it != a.end(); ++it) { 
+    int index = it - a.begin();
+   
+    if(globalStruct.assigned[index]) 
+       cout << index << ": " << (*it) << endl;
+
+  }
+
+  /*
+  cout << "Assigned: " << endl;
+
+  for(it = b.begin(); it != b.end(); ++it) { 
+    int index = it - b.begin();
+   
+    cout << index << ": " << (*it) << endl; 
+
+    } */
+
+}
+  
+  
+
+int main(){
+
+
+  vector<vector<int> > allVec;
+  vector<int> temp, temp2;
+  bool inAll = true;
+  vector<int> result;
+
+  
+
+  allVec = {{0,1,3, 2}, {0, 3, 1}, {0, 3, 1}};
+
+  temp = allVec[0];
+
+  for(vector<int>::iterator oit = temp.begin(); oit != temp.end(); ++oit){
+    int val = (*oit);
+
+    for(vector<vector<int> >::iterator init = allVec.begin() + 1; init != allVec.end(); ++init) {
+      temp2 = (*init);
+    
+      bool found = std::find(temp2.begin(),temp2.end(), val) != temp2.end();
+      if (!found) { cout << "HERE" << endl; inAll = false; break;}
+
+    } // inner for
+
+    if(inAll) result.push_back(val);
+
+  } // outer for
+
+
+
+
+  for(vector<int>::iterator oit = result.begin(); oit != result.end(); ++oit){
+    cout << (*oit) << endl;
+  }
+
+
+  return 0;
+}
+
+

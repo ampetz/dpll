@@ -33,7 +33,7 @@ void initializeStruct (cnfFormula inFormula){
   globalStruct.assigned = vector<bool>(numVars, false);
   globalStruct.decision = vector<vector<int>>(numVars);
   globalStruct.decisionLevel = 0;
-  globalStruct.g = boost::adjacency_list <>(numVars + 1);
+  globalStruct.g = graphType(numVars + 1);
 
 }
 
@@ -109,12 +109,22 @@ int main(){
   lit lit3 = {3, true};
   lit nlit3 = {3, false};
 
+  lit lit4 = {4, true};
+  lit nlit4 = {4, false};
+
+  lit lit5 = {5, true};
+  lit nlit5 = {5, false};
+
+  lit lit6 = {6, true};
+  lit nlit6 = {6, false};
+
   cnfFormula trivial = {{lit0}};
   cnfFormula testSat = {{lit0}, {nlit0, lit1}};
 
-  cnfFormula testUnsat1 = {{lit0},{nlit0}};
+  cnfFormula testUnsat1 = {{lit0}, {nlit0}};
 
-  cnfFormula testUnsat2 = {{lit0}, {lit1}, {nlit0,nlit1}};
+  //cnfFormula testUnsat2 = {{lit0},{nlit0,lit1}, {nlit1, lit2}, {nlit2, lit3}};
+  cnfFormula testUnsat2 = {{lit0},{nlit0,lit1}};
 
   cnfFormula testUnsat3 = {{lit0}, {lit1}, {lit2}, {nlit0,nlit1,nlit2}};
   
@@ -133,8 +143,22 @@ int main(){
   if(val){
     cout << endl << endl << "Unsat!" << endl << endl;
     
+    //add_edge(1, 3, globalStruct.g);
+    //add_edge(3, 4, globalStruct.g);
+    //add_edge(0,2, globalStruct.g);
+    //clear_vertex(3,globalStruct.g);
     printGlobal();
-    print_graph(globalStruct.g, "01234");
+    print_graph(globalStruct.g, "012345");
+    cout << lastAssignedLit(globalStruct.inputFormula[globalStruct.conflictClauseIndex]) << endl;
+    cout << "Before" << endl;
+    //pair<bool, int> dist = distanceBetween(3, 1);
+    //cout << dist.first << ", " << dist.second << endl;
+    
+
+    /*vector<int> res = backTrace(2);
+    cout << endl ;
+    for(vector<int>::iterator it = res.begin(); it != res.end(); ++it)
+    cout << (*it); */
 
     return 0;
   }
@@ -143,13 +167,24 @@ int main(){
     bool decideResult = decide();
     if(!decideResult){
       cout << endl << endl << "SAT!!!" << endl << endl;
+      //add_edge(1, 3, globalStruct.g);
+      
       printGlobal();
-      print_graph(globalStruct.g, "01234");
+      print_graph(globalStruct.g, "012345");
+      
+
+      //pair<bool, int> dist = distanceBetween(3, 1);
+      //cout << dist.first << ", " << dist.second << endl;
       return 0;
     }
     
+
+    //backTrace(2);
+    return 0;
     bool bcpResult = bcp();
     
+
+
     while(bcpResult){
       int backTrackLevel = analyzeConflict();
       if(backTrackLevel < 0){
