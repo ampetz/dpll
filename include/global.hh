@@ -528,7 +528,7 @@ vector<int> backTrace(int tailVar){
   vector<int> all;
   vector<int> temp;
 
-  cout << "SIZE of pred:  " << predecessors.size();
+  //cout << "SIZE of pred:  " << predecessors.size() << endl;
 
   for(vector<int>::iterator it = predecessors.begin(); it != predecessors.end(); ++it){
     bool exists = std::find(all.begin(), all.end(), ((*it))) != all.end();
@@ -589,12 +589,21 @@ int countToUip(int tail, int uip){
 int firstUIP (vector<int> conVars, vector<int> allUips){
 
   //int min;
-  int dist;
+  int dist, id;
   vector<int> dists;
   
-  int conVar = conVars[0];  //TODO:  loop through all conVars
-  int min = (distanceBetween(conVar, allUips[0])).second;
-  int id = allUips[0];
+
+  for(vector<int>::iterator it = conVars.begin(); it != conVars.end(); ++it){
+
+    int conVar = (*it);//conVars[0];  //TODO:  loop through all conVars
+    cout << "before distance between" << endl;
+    if(allUips.empty()) cout << "Empty" << endl;
+    if(allUips.size() == 1) cout << "1 element" << endl;
+    //cout << conVars[0] << endl;
+    //cout << allUips[0] << endl;
+    int min = (distanceBetween(conVar, allUips[0])).second;
+    cout << "After distance between" << endl;
+    id = allUips[0];
 
   for(vector<int>::iterator it = allUips.begin() + 1; it != allUips.end(); ++it){
     int uip = (*it);
@@ -602,7 +611,10 @@ int firstUIP (vector<int> conVars, vector<int> allUips){
     if(dist < min) id = uip;
     
   }
+
+  }
   
+  cout << "RETURNING ID: " << id;
   return id;
   
 
@@ -631,21 +643,32 @@ int findUIP (){
 
   }
 
+  cout << "Size: " << conVars.size() << endl;
+
   vector<vector<int> > allVec;
-  vector<int> temp, temp2;
+  vector<int> temp, temp2, temp3;
   bool inAll = true;
   vector<int> result;
 
   for(vector<int>::iterator it = conVars.begin(); it != conVars.end(); ++it){
 
     temp = backTrace((*it));
+    cout << "Pushing" << endl;
     allVec.push_back(temp);
   }
 
-  temp = allVec[0];
+  cout << "Hi" << endl;
 
-  for(vector<int>::iterator oit = temp.begin(); oit != temp.end(); ++oit){
+  temp3 = allVec[1];
+  cout << "size of allvec: " << allVec.size() << endl;
+  cout << "size of temp3: " << temp3.size() << endl;
+  cout << "Hi" << endl;
+
+  printGlobal();
+
+  for(vector<int>::iterator oit = temp3.begin(); oit != temp3.end(); ++oit){
     int val = (*oit);
+    // cout << "VAL: " << val << endl;
 
     for(vector<vector<int> >::iterator init = allVec.begin() + 1; init != allVec.end(); ++init) {
       temp2 = (*init);
@@ -659,7 +682,14 @@ int findUIP (){
 
   } // outer for
 
+  cout << "Almost end of find UIP" << endl;
   //Now result contains all UIPs.  Find firstUip
+
+  if(result.empty()){
+    int decNode = globalStruct.decision[globalStruct.decisionLevel][0];
+    result.push_back(decNode);
+
+  }
 
   return firstUIP(conVars, result);
    
@@ -675,7 +705,7 @@ vector<pair<int, int> > freq(vector<int> vars){
 
     vector<int>::iterator it2 = std::find(l.begin(), l.end(), var);
     int diff = (l.end() - it2);
-    cout << "DIFF: " << diff << endl;
+    //cout << "DIFF: " << diff << endl;
     
     result.push_back(make_pair(var, diff));
 
@@ -687,7 +717,7 @@ vector<pair<int, int> > freq(vector<int> vars){
 
 int lastAssignedLit (clause cl){
 
-  vector<int> l; // = globalStruct.lastAssigned;
+  vector<int> l = globalStruct.lastAssigned;
 
   for(vector<lit>::iterator it = cl.begin(); it != cl.end(); ++it){
     lit aLit = (*it);
@@ -717,7 +747,9 @@ bool stopCriterionMet (clause c) {
   vector<int> varsAtDl = globalStruct.decision[globalStruct.decisionLevel];
 
   vector<int> varsInCl;
+  cout << "before findUIP" << endl;
   int uip = findUIP();
+  cout << "After findUIP" << endl;
   bool result = true;
 
   for(vector<lit>::iterator it = c.begin(); it != c.end(); ++it){
@@ -812,18 +844,22 @@ int decLevel (int var){
 int analyzeConflict (){
   if(globalStruct.decisionLevel == 0) return -1;
 
-  
+  cout << "Past" << endl;
+
   clause currentConflict = globalStruct.inputFormula[globalStruct.conflictClauseIndex];
+
+  cout << "CC index: " <<  globalStruct.conflictClauseIndex << endl;
 
   while(!stopCriterionMet(currentConflict)){
 
-  
+    cout << "looking for stop criterion" << endl;
 
     int var = lastAssignedLit(currentConflict);
+    cout << "After last assigned lit" << endl;
     vector<int> ante = pred(var);
     clause clAnte = intsToClause(ante);
 
-
+    cout << "before resolve" << endl;
     currentConflict = resolve(currentConflict, clAnte, var);
 
 

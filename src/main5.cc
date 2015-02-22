@@ -16,6 +16,7 @@
 #include <cstdlib>
 
 #include "global.hh"
+#include "parse.hh"
 
 using namespace std;
 using namespace boost;
@@ -98,7 +99,7 @@ int main(){
 
   cnfFormula testSatttt = {{nlit0, nlit1, lit2}, {lit0, lit1}, {lit1, lit0}};
   
-  cnfFormula testSattttt = {{nlit0, lit1},{lit0, lit1}, {nlit1, lit2}, {nlit0, nlit1}, {nlit0, lit1, lit2}, {nlit0, lit2}, {lit0, lit2}};;
+  cnfFormula testSattttt = {{nlit0, lit1},{lit0, lit1}, {nlit1, lit2}, {nlit0, nlit1}, {nlit0, lit1, lit2}, {nlit0, lit2}, {lit0, lit2}, {lit0}};;
 
   cnfFormula testUnsat1 = {{lit0}, {nlit0}};
   cnfFormula testUnsat2 = {{lit0}, {lit1},{nlit0,nlit1}};
@@ -109,7 +110,14 @@ int main(){
   
   cnfFormula testUnsat4 = { {lit0, nlit0}, {lit1, nlit1} };
   
-  bool result = dpll(testSattttt);
+
+  cnfFormula fromInput = parseInput("src/5cnf.txt");
+
+
+  cout << endl;
+  printFormula(fromInput);
+  cout << endl << endl;
+  bool result = dpll(fromInput);
   //bool result = dpll(testUnsat3);
 
 
